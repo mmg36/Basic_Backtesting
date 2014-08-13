@@ -25,6 +25,8 @@ class Calculations:
         shorts = np.zeros(short_positions)
         big_dummy = 0
         small_dummy = 110
+        big_dummy_loc = -1
+        small_dummy_loc = -1
 
         for count_row in xrange(0, len(self.employment_data)):
             for count_pos in xrange(0, long_positions):
@@ -33,19 +35,25 @@ class Calculations:
                             self.employment_data[count_row][count_col] != -1:
                         big_dummy = self.employment_data[count_row][count_col]
                         big_dummy_loc = count_col
-                    longs[count_pos] = big_dummy_loc
+                    if big_dummy_loc != -1:
+                        longs[count_pos] = big_dummy_loc
+                        big_dummy_loc = -1
             for count_pos in xrange(0, short_positions):
                 for count_col in xrange(0, len(self.employment_data[count_row])):
                     if self.employment_data[count_row][count_col] <= small_dummy and \
                             self.employment_data[count_row][count_col] != -1:
                         small_dummy = self.employment_data[count_row][count_col]
                         small_dummy_loc = count_col
-                    shorts[count_pos] = small_dummy_loc
+                    if small_dummy_loc != -1:
+                        shorts[count_pos] = small_dummy_loc
+                        small_dummy_loc = -1
 
             for count_pos in xrange(0, long_positions):
-                self.investment_status[longs[count_pos]] = True
+                if longs[count_pos] != -1:
+                    self.investment_status[longs[count_pos]] = True
             for count_pos in xrange(0, short_positions):
-                self.investment_status[shorts[count_pos]] = True
+                if shorts[count_pos] != -1:
+                    self.investment_status[shorts[count_pos]] = True
 
     def investment(self):
         for count_row in xrange(0, len(self.investment_status)):
