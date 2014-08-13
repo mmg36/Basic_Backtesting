@@ -39,7 +39,7 @@ class IO:
         employment_data = IO('/home/mehdi/Desktop/Employment_data1.csv', False)
         price_data = IO('/home/mehdi/Desktop/NS_M1.csv', True)
         start_calculations = Calculations(2000, price_data.float_data, employment_data.float_data)
-        start_calculations.comparison(3, 3)
+        start_calculations.comparison(5, 5)
         start_calculations.investment()
 
 IO.main()
