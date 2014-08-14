@@ -28,19 +28,18 @@ class IO:
                 else:
                     self.float_data[count_row-1][count_col-1] = float(self.text_data[count_row][count_col])
 
-    def write_to_csv(self, output_address, investment, cash):
-        for count in xrange(0, len(investment)):
-            self.savetxt(output_address,
-                         (output_address,investment),
-                         delimiter=',')
+    @staticmethod
+    def write(output_address, parameter):
+        np.savetxt(output_address, parameter)
 
     @staticmethod
     def main():
         employment_data = IO('/home/mehdi/Desktop/Employment_data1.csv', False)
         price_data = IO('/home/mehdi/Desktop/NS_M1.csv', True)
         start_calculations = Calculations(2000, price_data.float_data, employment_data.float_data)
-        start_calculations.comparison(5, 5)
-        start_calculations.investment()
+        start_calculations.comparison(3, 3)
+        start_calculations.investment_algor()
+        IO.write('/home/mehdi/Desktop/results1.csv', start_calculations.investment)
+        IO.write('/home/mehdi/Desktop/results2.csv', start_calculations.cash)
 
 IO.main()
-
