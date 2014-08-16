@@ -34,12 +34,15 @@ class IO:
 
     @staticmethod
     def main():
+        short_positions = 2
+        long_positions = 2
         employment_data = IO('/home/mehdi/Desktop/Employment_data.csv', False)
         price_data = IO('/home/mehdi/Desktop/NS_M1.csv', True)
-        start_calculations = Calculations(10000, price_data.float_data, employment_data.float_data)
-        start_calculations.comparison(5, 5)
+        start_calculations = Calculations(000, price_data.float_data, employment_data.float_data)
+        start_calculations.comparison(long_positions, short_positions)
         start_calculations.investment_algor()
         IO.write('/home/mehdi/Desktop/results1.csv', start_calculations.investment)
         IO.write('/home/mehdi/Desktop/results2.csv', start_calculations.cash)
+        IO.write('/home/mehdi/Desktop/results3.csv', start_calculations.long_investment_status)
 
 IO.main()

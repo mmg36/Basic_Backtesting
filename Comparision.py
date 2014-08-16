@@ -32,7 +32,8 @@ class Calculations:
         for count_row in xrange(0, len(self.employment_data)):
             for count_pos in xrange(0, long_positions):
                 for count_col in xrange(0, len(self.employment_data[count_row])):
-                    if self.employment_data[count_row][count_col] >= big_dummy and \
+                    if self.price_data[count_row][count_col] > 0 and \
+                                    self.employment_data[count_row][count_col] >= big_dummy and \
                                     self.employment_data[count_row][count_col] != -1:
                         if count_pos != -1:
                             for i in xrange(0, count_pos):
@@ -48,7 +49,8 @@ class Calculations:
                 big_dummy = 0
             for count_pos in xrange(0, short_positions):
                 for count_col in xrange(0, len(self.employment_data[count_row])):
-                    if self.employment_data[count_row][count_col] <= small_dummy and \
+                    if self.price_data[count_row][count_col] > 0 and \
+                                    self.employment_data[count_row][count_col] <= small_dummy and \
                                     self.employment_data[count_row][count_col] != -1:
                         if count_pos != 0:
                             for i in xrange(0, count_pos):
@@ -64,7 +66,6 @@ class Calculations:
                 small_dummy = 110
 
             for count_pos in xrange(0, long_positions):
-                aa = False
                 if longs[count_pos] != 0:
                     self.long_investment_status[count_row][longs[count_pos]] = True
             for count_pos in xrange(0, short_positions):
@@ -72,15 +73,27 @@ class Calculations:
                     self.short_investment_status[count_row][shorts[count_pos]] = True
 
     def investment_algor(self):
-        for count_row in xrange(0, len(self.long_investment_status)):
+
+        # This is for the first datapoint in time (Problem with count_row-1 being smaller than 0)
+        count_row = 0
+        for count_col in xrange(0, len(self.long_investment_status[count_row])):
+            if self.long_investment_status[count_row][count_col]:
+                self.cash[count_row] += -self.price_data[count_row][count_col]
+                self.investment[count_row] += self.price_data[count_row][count_col]
+            elif self.short_investment_status[count_row][count_col]:
+                self.investment[count_row] -= self.price_data[count_row][count_col]
+                self.cash[count_row] += self.price_data[count_row][count_col]
+
+        # This is for the rest of the datapoints
+        for count_row in xrange(1, len(self.long_investment_status)):
             for count_col in xrange(0, len(self.long_investment_status[count_row])):
                 if self.long_investment_status[count_row][count_col]:
                     if self.long_investment_status[count_row - 1][count_col]:
                         self.investment[count_row] += (self.price_data[count_row][count_col] - \
-                                                        self.price_data[count_row - 1][count_col])
+                                                       self.price_data[count_row - 1][count_col])
                     elif self.short_investment_status[count_row - 1][count_col]:
-                        self.investment[count_row] += self.price_data[count_row][count_col] - \
-                                                        self.price_data[count_row - 1][count_col]
+                        self.investment[count_row] += self.price_data[count_row][count_col] + \
+                                                      self.price_data[count_row - 1][count_col]
                         # First line for selling the shorted stock and second for Buying the long stock
                         # No change in cash because one price_data of this week is added for selling the short position
                         # and then another one is deducted due to the long position starting this week.
@@ -90,22 +103,30 @@ class Calculations:
                 elif self.short_investment_status[count_row][count_col]:
                     if self.short_investment_status[count_row - 1][count_col]:
                         self.investment[count_row] += self.price_data[count_row - 1][count_col] - \
-                                                        self.price_data[count_row][count_col]
+                                                      self.price_data[count_row][count_col]
                         # No change in the cash part of the money
                     elif self.long_investment_status[count_row - 1][count_col]:
-                        self.investment[count_row] += -self.price_data[count_row-1][count_col] \
-                                                                      +self.price_data[count_row][count_col]
+                        self.investment[count_row] += -self.price_data[count_row - 1][count_col] \
+                                                      + self.price_data[count_row][count_col]
                         # No change in cash as money gained from offloading the short position is invested in the
                         # long position
                     else:
                         self.investment[count_row] -= self.price_data[count_row][count_col]
-                        self.cash[count_row] += self.price_data[count_row-1][count_col]
-                else:
-                    if self.short_investment_status[count_row - 1][count_col]:
-                        self.investment[count_row] -= self.price_data[count_row][count_col]
-                        self.cash[count_row] += self.price_data[count_row-1][count_col]
-                    elif self.long_investment_status[count_row - 1][count_col]:
-                        self.investment[count_row] -= self.price_data[count_row-1][count_col]
                         self.cash[count_row] += self.price_data[count_row][count_col]
+                else:
+                    if self.price_data[count_row][count_col] > 0:
+                        if self.short_investment_status[count_row - 1][count_col]:
+                            self.investment[count_row] += self.price_data[count_row - 1][count_col]
+                            self.cash[count_row] -= self.price_data[count_row][count_col]
+                    elif self.long_investment_status[count_row - 1][count_col]:
+                        self.investment[count_row] -= self.price_data[count_row - 1][count_col]
+                        self.cash[count_row] += self.price_data[count_row][count_col]
+                    else:
+                        if self.short_investment_status[count_row - 1][count_col]:
+                            self.investment[count_row] += self.price_data[count_row - 1][count_col]
+                            self.cash[count_row] -= self.price_data[count_row - 1][count_col]
+                        elif self.long_investment_status[count_row - 1][count_col]:
+                            self.investment[count_row] -= self.price_data[count_row - 1][count_col]
+                            self.cash[count_row] += self.price_data[count_row - 1][count_col]
             self.cash[count_row + 1] = self.cash[count_row]
             self.investment[count_row + 1] = self.investment[count_row]
