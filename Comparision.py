@@ -65,11 +65,12 @@ class Calculations:
                 small_dummy = 110
 
             for count_pos in xrange(0, long_positions):
+                aa = False
                 if longs[count_pos] != 0:
-                    self.long_investment_status[longs[count_pos]] = True
+                    self.long_investment_status[count_row][longs[count_pos]] = True
             for count_pos in xrange(0, short_positions):
                 if shorts[count_pos] != 0:
-                    self.short_investment_status[shorts[count_pos]] = True
+                    self.short_investment_status[count_row][shorts[count_pos]] = True
 
     def investment_algor(self):
         for count_row in xrange(0, len(self.long_investment_status)):
