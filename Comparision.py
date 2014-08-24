@@ -46,7 +46,7 @@ class Calculations:
                     if big_dummy_loc != -1:
                         longs[count_pos] = big_dummy_loc
                         big_dummy_loc = -1
-                big_dummy = 0
+                big_dummy = 0sdas
             for count_pos in xrange(0, short_positions):
                 for count_col in xrange(0, len(self.employment_data[count_row])):
                     if self.price_data[count_row][count_col] > 0 and \
