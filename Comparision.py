@@ -1,7 +1,7 @@
 __author__ = 'mehdi'
 
 import numpy as np
-
+from Trades import Overal_neutral
 
 class Calculations:
     def __init__(self, initial_money, read_price_data, read_employment_data):
@@ -11,8 +11,9 @@ class Calculations:
         :param read_price_data:
         :param read_employment_data:
         """
+        self.number_of_countries = len(read_employment_data[1])
         self.cash = np.zeros(len(read_employment_data) + 1)
-        self.cash[0] = initial_money
+        self.initial_money = initial_money
         self.investment = np.zeros(len(read_employment_data) + 1)
         self.price_data = read_price_data
         self.employment_data = read_employment_data
@@ -46,7 +47,7 @@ class Calculations:
                     if big_dummy_loc != -1:
                         longs[count_pos] = big_dummy_loc
                         big_dummy_loc = -1
-                big_dummy = 0sdas
+                big_dummy = 0
             for count_pos in xrange(0, short_positions):
                 for count_col in xrange(0, len(self.employment_data[count_row])):
                     if self.price_data[count_row][count_col] > 0 and \
@@ -73,60 +74,51 @@ class Calculations:
                     self.short_investment_status[count_row][shorts[count_pos]] = True
 
     def investment_algor(self):
-
         # This is for the first datapoint in time (Problem with count_row-1 being smaller than 0)
+        start_trading = Overal_neutral(len(self.cash), len(self.read_employment_data[1]), self.initial_money)
         count_row = 0
         for count_col in xrange(0, len(self.long_investment_status[count_row])):
             if self.long_investment_status[count_row][count_col]:
-                self.cash[count_row] += -self.price_data[count_row][count_col]
-                self.investment[count_row] += self.price_data[count_row][count_col]
+                start_trading.buy_long(count_row, count_col)
             elif self.short_investment_status[count_row][count_col]:
-                self.investment[count_row] -= self.price_data[count_row][count_col]
-                self.cash[count_row] += self.price_data[count_row][count_col]
-
+                start_trading.buy_short(count_row, count_col)
         # This is for the rest of the datapoints
         for count_row in xrange(1, len(self.long_investment_status)):
             for count_col in xrange(0, len(self.long_investment_status[count_row])):
                 if self.long_investment_status[count_row][count_col]:
                     if self.long_investment_status[count_row - 1][count_col]:
-                        self.investment[count_row] += (self.price_data[count_row][count_col] - \
-                                                       self.price_data[count_row - 1][count_col])
+                        start_trading.keep_long(count_row, count_col)
                     elif self.short_investment_status[count_row - 1][count_col]:
-                        self.investment[count_row] += self.price_data[count_row][count_col] + \
-                                                      self.price_data[count_row - 1][count_col]
-                        # First line for selling the shorted stock and second for Buying the long stock
-                        # No change in cash because one price_data of this week is added for selling the short position
-                        # and then another one is deducted due to the long position starting this week.
+                        start_trading.sell_short(count_row, count_col)
+                        start_trading.buy_long(count_row, count_col)
                     else:
-                        self.cash[count_row] += -self.price_data[count_row][count_col]
-                        self.investment[count_row] += self.price_data[count_row][count_col]
+                        start_trading.buy_long(count_row, count_col)
                 elif self.short_investment_status[count_row][count_col]:
                     if self.short_investment_status[count_row - 1][count_col]:
-                        self.investment[count_row] += self.price_data[count_row - 1][count_col] - \
-                                                      self.price_data[count_row][count_col]
-                        # No change in the cash part of the money
+                        start_trading.keep_short(count_row, count_col)
                     elif self.long_investment_status[count_row - 1][count_col]:
-                        self.investment[count_row] += -self.price_data[count_row - 1][count_col] \
-                                                      + self.price_data[count_row][count_col]
-                        # No change in cash as money gained from offloading the short position is invested in the
-                        # long position
+                        start_trading.sell_long(count_row, count_col)
+                        start_trading.buy_short(count_row, count_col)
                     else:
-                        self.investment[count_row] -= self.price_data[count_row][count_col]
-                        self.cash[count_row] += self.price_data[count_row][count_col]
+                        start_trading.buy_short(count_row, count_col)
                 else:
                     if self.price_data[count_row][count_col] > 0:
                         if self.short_investment_status[count_row - 1][count_col]:
-                            self.investment[count_row] += self.price_data[count_row - 1][count_col]
-                            self.cash[count_row] -= self.price_data[count_row][count_col]
-                    elif self.long_investment_status[count_row - 1][count_col]:
-                        self.investment[count_row] -= self.price_data[count_row - 1][count_col]
-                        self.cash[count_row] += self.price_data[count_row][count_col]
+                            start_trading.sell_short(count_row, count_col)
+                        elif self.long_investment_status[count_row - 1][count_col]:
+                            start_trading.sell_long(count_row, count_col)
                     else:
                         if self.short_investment_status[count_row - 1][count_col]:
-                            self.investment[count_row] += self.price_data[count_row - 1][count_col]
-                            self.cash[count_row] -= self.price_data[count_row - 1][count_col]
+                            start_trading.sell_short_nodata(count_row, count_col)
                         elif self.long_investment_status[count_row - 1][count_col]:
-                            self.investment[count_row] -= self.price_data[count_row - 1][count_col]
-                            self.cash[count_row] += self.price_data[count_row - 1][count_col]
-            self.cash[count_row + 1] = self.cash[count_row]
-            self.investment[count_row + 1] = self.investment[count_row]
+                            start_trading.sell_long_nodata(count_row, count_col)
+
+            start_trading.refresh_balance(count_row)
+
+        for count_col in xrange(0, len(self.number_of_countries)):
+            if self.short_investment_status[count_row][count_col]:
+                            start_trading.sell_short(count_row, count_col)
+            elif self.long_investment_status[count_row][count_col]:
+                            start_trading.sell_long(count_row, count_col)
+
+        start_trading.earning_percentage()
