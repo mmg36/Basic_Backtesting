@@ -2,15 +2,18 @@ __author__ = 'mehdi'
 
 import numpy as np
 from Trades import Overal_neutral
+import csv
+
 
 class Calculations:
-    def __init__(self, initial_money, read_price_data, read_employment_data):
+    def __init__(self, initial_money, read_price_data, read_employment_data, output_address):
         """
 
         :param initial_money:
         :param read_price_data:
         :param read_employment_data:
         """
+        self.output_address = output_address
         self.number_of_countries = len(read_employment_data[1])
         self.cash = np.zeros(len(read_employment_data) + 1)
         self.initial_money = initial_money
@@ -19,6 +22,8 @@ class Calculations:
         self.employment_data = read_employment_data
         self.long_investment_status = np.zeros((len(read_employment_data), len(read_employment_data[1])), dtype=bool)
         self.short_investment_status = np.zeros((len(read_employment_data), len(read_employment_data[1])), dtype=bool)
+        self.CLI_rise_status = np.zeros((len(read_employment_data), len(read_employment_data[1])), dtype=bool)
+        self.CLI_largerthanhundred_status = np.zeros((len(read_employment_data), len(read_employment_data[1])), dtype=bool)
 
     def comparison(self, long_positions, short_positions):
 
@@ -75,13 +80,14 @@ class Calculations:
 
     def investment_algor(self):
         # This is for the first datapoint in time (Problem with count_row-1 being smaller than 0)
-        start_trading = Overal_neutral(len(self.cash), len(self.read_employment_data[1]), self.initial_money)
+        start_trading = Overal_neutral(len(self.cash), self.number_of_countries, self.initial_money, self.price_data)
         count_row = 0
         for count_col in xrange(0, len(self.long_investment_status[count_row])):
             if self.long_investment_status[count_row][count_col]:
                 start_trading.buy_long(count_row, count_col)
             elif self.short_investment_status[count_row][count_col]:
                 start_trading.buy_short(count_row, count_col)
+        start_trading.refresh_balance(count_row)
         # This is for the rest of the datapoints
         for count_row in xrange(1, len(self.long_investment_status)):
             for count_col in xrange(0, len(self.long_investment_status[count_row])):
@@ -115,10 +121,128 @@ class Calculations:
 
             start_trading.refresh_balance(count_row)
 
-        for count_col in xrange(0, len(self.number_of_countries)):
+        for count_col in xrange(0, self.number_of_countries):
             if self.short_investment_status[count_row][count_col]:
                             start_trading.sell_short(count_row, count_col)
             elif self.long_investment_status[count_row][count_col]:
                             start_trading.sell_long(count_row, count_col)
 
         start_trading.earning_percentage()
+        IO.write(self.output_address+'_C.csv', start_trading.investment)
+        IO.write(self.output_address+'_I.csv', start_trading.cash)
+
+
+    def CLI_intertemporal_investment(self):
+        for count_row in xrange(0, ):
+            for count_col in xrange(0,):
+                if self.CLI_largerthanhundred_status[count_row][count_col]:
+                    self.long_investment_status[count_row][count_col] = True
+                else:
+                    if self.CLI_rise_status:
+                        self.long_investment_status[count_row][count_col] = True
+                    else:
+                        self.short_investment_status[count_row][count_col] = True
+
+    def CLI_intertemporal(self):
+        test_value = 100
+        count_row = 0
+        for count_col in xrange(0,):
+            if self.employment_data[count_row][count_col] >= test_value:
+                self.CLI_largerthanhundred_status[count_row][count_col] = True
+            else:
+                self.CLI_largerthanhundred_status[count_row][count_col] = False
+        for count_row in xrange(1,):
+            for count_col in xrange (0,):
+                if self.employment_data[count_row][count_col] >= test_value:
+                    self.CLI_largerthanhundred_status[count_row][count_col] = True
+                else:
+                    self.CLI_largerthanhundred_status[count_row][count_col] = False
+                if self.employment_data[count_row][count_col] >= self.employment_data[count_row-1][count_col] and \
+                                                            self.employment_data[count_row][count_col] > 0:
+                    self.CLI_rise_status[count_row][count_col] = True
+                else:
+                    self.CLI_rise_status[count_row][count_col] = False
+
+
+class IO:
+
+    def __init__(self, file_address, isshareprice):
+
+        try:
+            self.text_data = np.loadtxt(file_address,
+                                        delimiter=',',
+                                        dtype='str')
+
+        except Exception, e:
+            print str(e)
+
+        self.float_data = np.zeros((len(self.text_data)-1, len(self.text_data[1])-1))
+        for count_row in xrange(1, len(self.text_data)):
+            for count_col in xrange(1, len(self.text_data[count_row])):
+                if self.text_data[count_row][count_col] == ':' or self.text_data[count_row][count_col] == "":
+                    if isshareprice:
+                        self.float_data[count_row-1][count_col-1] = 0
+                    else:
+                        self.float_data[count_row-1][count_col-1] = -1
+                else:
+                    self.float_data[count_row-1][count_col-1] = float(self.text_data[count_row][count_col])
+
+    @staticmethod
+    def write(output_address, parameter):
+        np.savetxt(output_address, parameter, delimiter=",")
+
+    @staticmethod
+    def main():
+        short_positions = 1
+        long_positions = 1
+        output_1 ='/home/mehdi/Desktop/results1'
+        employment_data = IO('/home/mehdi/Desktop/Productivity.csv', False)
+        price_data = IO('/home/mehdi/Desktop/NS_M_CLI.csv', True)
+        start_calculations = Calculations(1000, price_data.float_data, employment_data.float_data, output_1)
+        start_calculations.comparison(long_positions, short_positions)
+        start_calculations.investment_algor()
+
+        short_positions = 3
+        long_positions = 3
+        output_2 = '/home/mehdi/Desktop/results2'
+        start_calculations = Calculations(1000, price_data.float_data, employment_data.float_data, output_2)
+        start_calculations.comparison(long_positions, short_positions)
+        start_calculations.investment_algor()
+
+        short_positions = 5
+        long_positions = 5
+        output_3 = '/home/mehdi/Desktop/results1'
+        start_calculations = Calculations(1000, price_data.float_data, employment_data.float_data, output_3)
+        start_calculations.comparison(long_positions, short_positions)
+        start_calculations.investment_algor()
+
+
+    @staticmethod
+    def main1():
+        employment_data = IO('/home/mehdi/Desktop/Employment_data.csv', '/home/mehdi/Desktop/CLI.csv', False)
+        employment_data.clear_dataset()
+
+class Clean_dataset:
+    def __init__(self, file_address):
+        self.clear_data = []
+        try:
+            self.text_data = np.loadtxt(file_address,
+                                        delimiter=',',
+                                        dtype='str')
+
+        except Exception, e:
+            print str(e)
+
+    def clear_dataset(self):
+        i = -1
+        for count_row in xrange(0, len(self.text_data1)):
+            if self.text_data1[count_row][3] != self.text_data1[count_row-1][3]:
+                i += 1
+                self.clear_data.append([])
+            self.clear_data[i].append(self.text_data1[count_row][4])
+        with open('/home/mehdi/Desktop/CLI_Out.csv', 'wb') as out_file:
+            wr = csv.writer(out_file, quoting=csv.QUOTE_ALL)
+            wr.writerows(map(list, map(None, *self.clear_data)))
+            out_file.close()
+
+IO.main()

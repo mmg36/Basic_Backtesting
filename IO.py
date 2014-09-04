@@ -38,7 +38,7 @@ class IO:
         long_positions = 1
         employment_data = IO('/home/mehdi/Desktop/Productivity.csv', False)
         price_data = IO('/home/mehdi/Desktop/NS_M_CLI.csv', True)
-        start_calculations = Calculations(0, price_data.float_data, employment_data.float_data)
+        start_calculations = Calculations(1000, price_data.float_data, employment_data.float_data)
         start_calculations.comparison(long_positions, short_positions)
         start_calculations.investment_algor()
         IO.write('/home/mehdi/Desktop/results1_C.csv', start_calculations.investment)
@@ -46,7 +46,7 @@ class IO:
 
         short_positions = 3
         long_positions = 3
-        start_calculations = Calculations(0, price_data.float_data, employment_data.float_data)
+        start_calculations = Calculations(1000, price_data.float_data, employment_data.float_data)
         start_calculations.comparison(long_positions, short_positions)
         start_calculations.investment_algor()
         IO.write('/home/mehdi/Desktop/results2_C.csv', start_calculations.investment)
@@ -54,7 +54,7 @@ class IO:
 
         short_positions = 5
         long_positions = 5
-        start_calculations = Calculations(0, price_data.float_data, employment_data.float_data)
+        start_calculations = Calculations(1000, price_data.float_data, employment_data.float_data)
         start_calculations.comparison(long_positions, short_positions)
         start_calculations.investment_algor()
         IO.write('/home/mehdi/Desktop/results3_C.csv', start_calculations.investment)
