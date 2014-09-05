@@ -20,8 +20,7 @@ class Calculations:
         self.investment = np.zeros(len(read_employment_data) + 1)
         self.price_data = read_price_data
         self.employment_data = read_employment_data
-        self.long_investment_status = np.zeros((len(read_employment_data), len(read_employment_data[1])), dtype=bool)
-        self.short_investment_status = np.zeros((len(read_employment_data), len(read_employment_data[1])), dtype=bool)
+        self.investment_status = np.zeros((len(read_employment_data), len(read_employment_data[1])), dtype=int)
         self.CLI_rise_status = np.zeros((len(read_employment_data), len(read_employment_data[1])), dtype=bool)
         self.CLI_largerthanhundred_status = np.zeros((len(read_employment_data), len(read_employment_data[1])), dtype=bool)
 
@@ -73,75 +72,113 @@ class Calculations:
 
             for count_pos in xrange(0, long_positions):
                 if longs[count_pos] != 0:
-                    self.long_investment_status[count_row][longs[count_pos]] = True
+                    self.investment_status[count_row][longs[count_pos]] += 1
             for count_pos in xrange(0, short_positions):
                 if shorts[count_pos] != 0:
-                    self.short_investment_status[count_row][shorts[count_pos]] = True
+                    self.investment_status[count_row][shorts[count_pos]] -= 1
 
     def investment_algor(self):
         # This is for the first datapoint in time (Problem with count_row-1 being smaller than 0)
         start_trading = Overal_neutral(len(self.cash), self.number_of_countries, self.initial_money, self.price_data)
         count_row = 0
-        for count_col in xrange(0, len(self.long_investment_status[count_row])):
-            if self.long_investment_status[count_row][count_col]:
+        for count_col in xrange(0, len(self.investment_status[count_row])):
+            if self.investment_status[count_row][count_col] > 0:
                 start_trading.buy_long(count_row, count_col)
-            elif self.short_investment_status[count_row][count_col]:
+            elif self.investment_status[count_row][count_col] < 0:
                 start_trading.buy_short(count_row, count_col)
+
+        one_or_more_long = True
+        while start_trading.cash[count_row] > 0 and one_or_more_long:
+            one_or_more_long = False
+            for count_col in xrange(0, len(self.investment_status[count_row])):
+                if self.investment_status[count_row][count_col] > 0:
+                    one_or_more_long = False
+                    self.investment_status[count_row][count_col] += 1
+                    start_trading.buy_long(count_row, count_col)
+
+        if start_trading.cash[count_row] < 0:
+            start_trading.initial_money += -1 * start_trading.cash[count_row]
+            start_trading.cash[count_row] = 0
+
         start_trading.refresh_balance(count_row)
+
         # This is for the rest of the datapoints
-        for count_row in xrange(1, len(self.long_investment_status)):
-            for count_col in xrange(0, len(self.long_investment_status[count_row])):
-                if self.long_investment_status[count_row][count_col]:
-                    if self.long_investment_status[count_row - 1][count_col]:
-                        start_trading.keep_long(count_row, count_col)
-                    elif self.short_investment_status[count_row - 1][count_col]:
-                        start_trading.sell_short(count_row, count_col)
+        for count_row in xrange(1, len(self.investment_status)):
+            for count_col in xrange(0, len(self.investment_status[count_row])):
+                if self.investment_status[count_row][count_col] > 0:
+                    if self.investment_status[count_row - 1][count_col] > 0:
+                        for iter in xrange(0, self.investment_status[count_row - 1][count_col]):
+                            start_trading.keep_long(count_row, count_col)
+                    elif self.investment_status[count_row - 1][count_col] < 0:
+                        for iter in xrange(0, -1 * self.investment_status[count_row - 1][count_col]):
+                            start_trading.sell_short(count_row, count_col)
                         start_trading.buy_long(count_row, count_col)
                     else:
                         start_trading.buy_long(count_row, count_col)
-                elif self.short_investment_status[count_row][count_col]:
-                    if self.short_investment_status[count_row - 1][count_col]:
-                        start_trading.keep_short(count_row, count_col)
-                    elif self.long_investment_status[count_row - 1][count_col]:
-                        start_trading.sell_long(count_row, count_col)
+                elif self.investment_status[count_row][count_col] < 0:
+                    if self.investment_status[count_row - 1][count_col] < 0:
+                        for iter in xrange(0, -1 * self.investment_status[count_row - 1][count_col]):
+                            start_trading.keep_short(count_row, count_col)
+                    elif self.investment_status[count_row - 1][count_col] > 0:
+                        for iter in xrange(0, self.investment_status[count_row - 1][count_col]):
+                            start_trading.sell_long(count_row, count_col)
                         start_trading.buy_short(count_row, count_col)
                     else:
                         start_trading.buy_short(count_row, count_col)
                 else:
                     if self.price_data[count_row][count_col] > 0:
-                        if self.short_investment_status[count_row - 1][count_col]:
-                            start_trading.sell_short(count_row, count_col)
-                        elif self.long_investment_status[count_row - 1][count_col]:
-                            start_trading.sell_long(count_row, count_col)
+                        if self.investment_status[count_row - 1][count_col] < 0:
+                            for iter in xrange(0, -1 * self.investment_status[count_row - 1][count_col]):
+                                start_trading.sell_short(count_row, count_col)
+                        elif self.investment_status[count_row - 1][count_col] > 0:
+                            for iter in xrange(0, self.investment_status[count_row - 1][count_col]):
+                                start_trading.sell_long(count_row, count_col)
                     else:
-                        if self.short_investment_status[count_row - 1][count_col]:
-                            start_trading.sell_short_nodata(count_row, count_col)
-                        elif self.long_investment_status[count_row - 1][count_col]:
-                            start_trading.sell_long_nodata(count_row, count_col)
+                        if self.investment_status[count_row - 1][count_col] < 0:
+                            for iter in xrange(0, self.investment_status[count_row - 1][count_col]):
+                                start_trading.sell_short_nodata(count_row, count_col)
+                        elif self.investment_status[count_row - 1][count_col] > 0:
+                            for iter in xrange(0, self.investment_status[count_row - 1][count_col]):
+                                start_trading.sell_long_nodata(count_row, count_col)
+            one_or_more_long = True
+            while start_trading.cash[count_row] > 0 and one_or_more_long:
+                one_or_more_long = False
+                for count_col in xrange(0, len(self.investment_status[count_row])):
+                    if self.investment_status[count_row][count_col] > 0:
+                        one_or_more_long = True
+                        self.investment_status[count_row][count_col] += 1
+                        start_trading.buy_long(count_row, count_col)
 
+            if start_trading.cash[count_row] < 0:
+                start_trading.initial_money += -1 * start_trading.cash[count_row]
+                start_trading.cash[count_row] = 0
             start_trading.refresh_balance(count_row)
 
         for count_col in xrange(0, self.number_of_countries):
-            if self.short_investment_status[count_row][count_col]:
+            if self.investment_status[count_row][count_col] < 0:
+                for iter in xrange(0, -1 * self.investment_status[count_row - 1][count_col]):
                             start_trading.sell_short(count_row, count_col)
-            elif self.long_investment_status[count_row][count_col]:
+            elif self.investment_status[count_row][count_col] > 0:
+                for iter in xrange(0, self.investment_status[count_row - 1][count_col]):
                             start_trading.sell_long(count_row, count_col)
+        start_trading.refresh_balance(count_row)
 
         start_trading.earning_percentage()
         IO.write(self.output_address+'_C.csv', start_trading.investment)
         IO.write(self.output_address+'_I.csv', start_trading.cash)
+        IO.write(self.output_address+'_P.csv', start_trading.percentage_return)
 
 
     def CLI_intertemporal_investment(self):
         for count_row in xrange(0, ):
             for count_col in xrange(0,):
                 if self.CLI_largerthanhundred_status[count_row][count_col]:
-                    self.long_investment_status[count_row][count_col] = True
+                    self.investment_status[count_row][count_col] += 1
                 else:
                     if self.CLI_rise_status:
-                        self.long_investment_status[count_row][count_col] = True
+                        self.investment_status[count_row][count_col] += 1
                     else:
-                        self.short_investment_status[count_row][count_col] = True
+                        self.investment_status[count_row][count_col] -= 1
 
     def CLI_intertemporal(self):
         test_value = 100
@@ -196,24 +233,30 @@ class IO:
         short_positions = 1
         long_positions = 1
         output_1 ='/home/mehdi/Desktop/results1'
-        employment_data = IO('/home/mehdi/Desktop/Productivity.csv', False)
+        employment_data = IO('/home/mehdi/Desktop/CLI_Data1.csv', False)
         price_data = IO('/home/mehdi/Desktop/NS_M_CLI.csv', True)
         start_calculations = Calculations(1000, price_data.float_data, employment_data.float_data, output_1)
-        start_calculations.comparison(long_positions, short_positions)
+        #start_calculations.comparison(long_positions, short_positions)
+        start_calculations.CLI_intertemporal()
+        start_calculations.CLI_intertemporal_investment()
         start_calculations.investment_algor()
 
         short_positions = 3
         long_positions = 3
         output_2 = '/home/mehdi/Desktop/results2'
         start_calculations = Calculations(1000, price_data.float_data, employment_data.float_data, output_2)
-        start_calculations.comparison(long_positions, short_positions)
+        #start_calculations.comparison(long_positions, short_positions)
+        start_calculations.CLI_intertemporal()
+        start_calculations.CLI_intertemporal_investment()
         start_calculations.investment_algor()
 
-        short_positions = 5
-        long_positions = 5
-        output_3 = '/home/mehdi/Desktop/results1'
+        short_positions = 4
+        long_positions = 4
+        output_3 = '/home/mehdi/Desktop/results3'
         start_calculations = Calculations(1000, price_data.float_data, employment_data.float_data, output_3)
-        start_calculations.comparison(long_positions, short_positions)
+        #start_calculations.comparison(long_positions, short_positions)
+        start_calculations.CLI_intertemporal()
+        start_calculations.CLI_intertemporal_investment()
         start_calculations.investment_algor()
 
 
