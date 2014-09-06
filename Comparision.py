@@ -140,11 +140,12 @@ class Calculations:
                         elif self.investment_status[count_row - 1][count_col] > 0:
                             for iter in xrange(0, self.investment_status[count_row - 1][count_col]):
                                 start_trading.sell_long_nodata(count_row, count_col)
+
             one_or_more_long = True
             while start_trading.cash[count_row] > 0 and one_or_more_long:
                 one_or_more_long = False
                 for count_col in xrange(0, len(self.investment_status[count_row])):
-                    if self.investment_status[count_row][count_col] > 0:
+                    if self.investment_status[count_row][count_col] > 0 and self.price_data[count_row][count_col]:
                         one_or_more_long = True
                         self.investment_status[count_row][count_col] += 1
                         start_trading.buy_long(count_row, count_col)
@@ -170,12 +171,13 @@ class Calculations:
 
 
     def CLI_intertemporal_investment(self):
-        for count_row in xrange(0, ):
-            for count_col in xrange(0,):
-                if self.CLI_largerthanhundred_status[count_row][count_col]:
+        for count_row in xrange(0, len(self.CLI_rise_status)):
+            for count_col in xrange(0, self.number_of_countries):
+                if self.CLI_largerthanhundred_status[count_row][count_col] and \
+                        self.price_data[count_row][count_col] > 0:
                     self.investment_status[count_row][count_col] += 1
-                else:
-                    if self.CLI_rise_status:
+                elif self.price_data[count_row][count_col] > 0:
+                    if self.CLI_rise_status[count_row][count_col]:
                         self.investment_status[count_row][count_col] += 1
                     else:
                         self.investment_status[count_row][count_col] -= 1
@@ -183,13 +185,13 @@ class Calculations:
     def CLI_intertemporal(self):
         test_value = 100
         count_row = 0
-        for count_col in xrange(0,):
+        for count_col in xrange(0, self.number_of_countries):
             if self.employment_data[count_row][count_col] >= test_value:
                 self.CLI_largerthanhundred_status[count_row][count_col] = True
             else:
                 self.CLI_largerthanhundred_status[count_row][count_col] = False
-        for count_row in xrange(1,):
-            for count_col in xrange (0,):
+        for count_row in xrange(1, len(self.CLI_rise_status)):
+            for count_col in xrange (0, self.number_of_countries):
                 if self.employment_data[count_row][count_col] >= test_value:
                     self.CLI_largerthanhundred_status[count_row][count_col] = True
                 else:
@@ -233,32 +235,29 @@ class IO:
         short_positions = 1
         long_positions = 1
         output_1 ='/home/mehdi/Desktop/results1'
-        employment_data = IO('/home/mehdi/Desktop/CLI_Data1.csv', False)
-        price_data = IO('/home/mehdi/Desktop/NS_M_CLI.csv', True)
+        employment_data = IO('/home/mehdi/Desktop/Employment_data.csv', False)
+        price_data = IO('/home/mehdi/Desktop/NS_M1.csv', True)
         start_calculations = Calculations(1000, price_data.float_data, employment_data.float_data, output_1)
-        #start_calculations.comparison(long_positions, short_positions)
-        start_calculations.CLI_intertemporal()
-        start_calculations.CLI_intertemporal_investment()
+        start_calculations.comparison(long_positions, short_positions)
         start_calculations.investment_algor()
 
         short_positions = 3
         long_positions = 3
-        output_2 = '/home/mehdi/Desktop/results2'
+        output_2 ='/home/mehdi/Desktop/results2'
+        employment_data = IO('/home/mehdi/Desktop/Employment_data.csv', False)
+        price_data = IO('/home/mehdi/Desktop/NS_M1.csv', True)
         start_calculations = Calculations(1000, price_data.float_data, employment_data.float_data, output_2)
-        #start_calculations.comparison(long_positions, short_positions)
-        start_calculations.CLI_intertemporal()
-        start_calculations.CLI_intertemporal_investment()
+        start_calculations.comparison(long_positions, short_positions)
         start_calculations.investment_algor()
 
-        short_positions = 4
-        long_positions = 4
-        output_3 = '/home/mehdi/Desktop/results3'
+        short_positions = 5
+        long_positions = 5
+        output_3 ='/home/mehdi/Desktop/results3'
+        employment_data = IO('/home/mehdi/Desktop/Employment_data.csv', False)
+        price_data = IO('/home/mehdi/Desktop/NS_M1.csv', True)
         start_calculations = Calculations(1000, price_data.float_data, employment_data.float_data, output_3)
-        #start_calculations.comparison(long_positions, short_positions)
-        start_calculations.CLI_intertemporal()
-        start_calculations.CLI_intertemporal_investment()
+        start_calculations.comparison(long_positions, short_positions)
         start_calculations.investment_algor()
-
 
     @staticmethod
     def main1():

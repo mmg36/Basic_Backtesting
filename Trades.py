@@ -2,7 +2,7 @@ __author__ = 'mehdi'
 import numpy as np
 
 
-class Trades:
+class Trades():
 
     def __init__(self, investment_period, number_of_countries, initial_money, price_data):
         self.investment_period = investment_period
@@ -10,13 +10,17 @@ class Trades:
         self.cash = np.zeros(investment_period + 1)
         self.percentage_return = np.zeros(investment_period+1)
         self.cash[0] = initial_money
+        self.initial_money = initial_money
         self.investment = np.zeros(investment_period + 1)
        # self.cash_short_margin = np.zeros(investment_period, number_of_countries)
         self.price_data = price_data
 
     def earning_percentage(self):
-        for count_row in xrange(0, self.investment_period+1):
-            self.percentage_return[count_row] = (self.investment[count_row]+self.cash[count_row])/self.cash[0]
+        self.percentage_return[0] = 1
+        for count_row in xrange(1, self.investment_period+1):
+            self.percentage_return[count_row] = (self.investment[count_row]+self.cash[count_row]-self.investment[count_row - 1] - self.cash[count_row - 1])/ \
+                                                (self.investment[count_row - 1] + self.cash[count_row - 1]) + \
+                                                self.percentage_return[count_row - 1]
 
 class Overal_neutral (Trades):
     def __init__(self, investment_period, number_of_countries, initial_money, price_data):
@@ -24,6 +28,7 @@ class Overal_neutral (Trades):
 
     def buy_long(self, count_row, count_col):
         self.cash[count_row] -= self.price_data[count_row][count_col]
+        ss1 = self.price_data[count_row][count_col]
         self.investment[count_row] += self.price_data[count_row][count_col]
 
     def sell_long(self, count_row, count_col):
