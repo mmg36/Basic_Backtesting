@@ -23,6 +23,7 @@ class Calculations:
         self.investment_status = np.zeros((len(read_employment_data), len(read_employment_data[1])), dtype=int)
         self.CLI_rise_status = np.zeros((len(read_employment_data), len(read_employment_data[1])), dtype=bool)
         self.CLI_largerthanhundred_status = np.zeros((len(read_employment_data), len(read_employment_data[1])), dtype=bool)
+        self.Currency_trend_status = np.zeros((len(read_employment_data), len(read_employment_data[1])), dtype=bool)
 
     def comparison(self, long_positions, short_positions):
 
@@ -202,6 +203,26 @@ class Calculations:
                 else:
                     self.CLI_rise_status[count_row][count_col] = False
 
+    def currency_trend(self):
+        # To use this method basically choose a universal currency like Euro and then workout the conversion rate to
+        # that currency for all of the currencies that you are using. For example if you are looking into America then
+        # workout the USD:EUR conversion rate (not the other way around!) and run the test on that dataset.
+        for count_row in xrange(1, self.number_of_countries):
+            for count_col in xrange(0, self.number_of_countries):
+                if self.employment_data[count_row][count_col] <= self.employment_data[count_row-1][count_col]:
+                    self.Currency_trend_status[count_row][count_col] = True
+                else:
+                    self.Currency_trend_status[count_row][count_col] = False
+
+    def currency_ternd_investment(self):
+        for count_col in xrange(0, len(self.Currency_trend_status)):
+            for count_row in xrange(0, len(self.number_of_countries)):
+                if self.price_data[count_row][count_col] > 0:
+                    if self.Currency_trend_status[count_row][count_col]:
+                        self.investment_status[count_row][count_col] += 1
+                    else:
+                        self.investment_status[count_row][count_col] -= 1
+
 
 class IO:
 
@@ -231,15 +252,19 @@ class IO:
         np.savetxt(output_address, parameter, delimiter=",")
 
     @staticmethod
-    def main():
+    def main1():
+        # This method is for short/longing the top and bottom x positions respectively.
         short_positions = 1
         long_positions = 1
-        output_1 ='/home/mehdi/Desktop/results1'
-        employment_data = IO('/home/mehdi/Desktop/Employment_data.csv', False)
-        price_data = IO('/home/mehdi/Desktop/NS_M1.csv', True)
+        output_1 ='/home/mehdi/Desktop/results1' # put the output address file here.
+        employment_data = IO('/home/mehdi/Desktop/Employment_data.csv', False) # This is the employment or CSI or etc data
+        price_data = IO('/home/mehdi/Desktop/NS_M1.csv', True) # This is the stock price data that you want to invest in
         start_calculations = Calculations(1000, price_data.float_data, employment_data.float_data, output_1)
+        #Line above setts the variables based on the input data
         start_calculations.comparison(long_positions, short_positions)
+        # Line above selects the long and short positions
         start_calculations.investment_algor()
+        # Line above actually starts trading
 
         short_positions = 3
         long_positions = 3
@@ -260,9 +285,14 @@ class IO:
         start_calculations.investment_algor()
 
     @staticmethod
-    def main1():
-        employment_data = IO('/home/mehdi/Desktop/Employment_data.csv', '/home/mehdi/Desktop/CLI.csv', False)
-        employment_data.clear_dataset()
+    def main2():
+        output_1 ='/home/mehdi/Desktop/results1'
+        employment_data = IO('/home/mehdi/Desktop/Employment_data.csv', False)
+        price_data = IO('/home/mehdi/Desktop/NS_M1.csv', True)
+        start_calculations = Calculations(1000, price_data.float_data, employment_data.float_data, output_1)
+        start_calculations.currency_trend()
+        start_calculations.currency_ternd_investment()
+        start_calculations.investment_algor()
 
 class Clean_dataset:
     def __init__(self, file_address):
@@ -277,14 +307,22 @@ class Clean_dataset:
 
     def clear_dataset(self):
         i = -1
-        for count_row in xrange(0, len(self.text_data1)):
+        for count_row in xrange(0, len(self.text_data)):
             if self.text_data1[count_row][3] != self.text_data1[count_row-1][3]:
                 i += 1
                 self.clear_data.append([])
-            self.clear_data[i].append(self.text_data1[count_row][4])
+            self.clear_data[i].append(self.text_data[count_row][4])
         with open('/home/mehdi/Desktop/CLI_Out.csv', 'wb') as out_file:
             wr = csv.writer(out_file, quoting=csv.QUOTE_ALL)
             wr.writerows(map(list, map(None, *self.clear_data)))
             out_file.close()
 
-IO.main()
+    def month_to_year(self, output_address):
+        annual_data = []
+        for count_row in xrange(0, len(self.text_data)):
+            if (count_row-1) % 12 == 0:
+                annual_data.append(self.text_data[count_row])
+        np.savetext(output_address, annual_data, delimeter=",")
+
+IO.main1() # Use this method if you would like to short/long positions at the same time.
+IO.main1() # Use this method if you would like to do CLI temp investment
