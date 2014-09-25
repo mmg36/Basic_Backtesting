@@ -325,4 +325,4 @@ class Clean_dataset:
         np.savetext(output_address, annual_data, delimeter=",")
 
 IO.main1() # Use this method if you would like to short/long positions at the same time.
-IO.main1() # Use this method if you would like to do CLI temp investment
+IO.main1() # Use this method if you would like to do CLI temp investment.
